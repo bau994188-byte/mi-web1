@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tienda Pro</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        html, body {
+            margin: 0;
+            height: 100%;
+            font-family: Arial;
+            background: url("fondo1.jpg") no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            width: 200px;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+        }
+
+        .sidebar a {
+            display: block;
+            margin: 10px 0;
+            color: white;
+            text-decoration: none;
+        }
+
+        .main {
+            margin-left: 220px;
+            padding: 20px;
+        }
+
+        .search {
+            text-align: center;
+            margin: 20px;
+        }
+
+        .search input {
+            width: 300px;
+            padding: 10px;
+        }
+
+        .productos {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .producto {
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            width: 200px;
+            text-align: center;
+            box-shadow: 0 0 10px #00bcd4;
+        }
+
+        img {
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 8px;
+            width: 100%;
+            background: #00bcd4;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        .carrito {
+            position: fixed;
+            right: 10px;
+            top: 80px;
+            width: 200px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .delete {
+            background: red;
+            color: white;
+            border: none;
+            margin-left: 5px;
+        }
+
+        .soporte {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #00bcd4;
+            padding: 15px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: black;
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+        }
+
+        .modal input {
+            width: 100%;
+            margin: 5px 0;
+            padding: 8px;
+        }
+
+        .historial {
+            margin-top: 40px;
+        }
+
+        /* 📱 RESPONSIVE */
+        @media (max-width: 768px) {
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                text-align: center;
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 10px;
+            }
+
+            .productos {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .producto {
+                width: 90%;
+            }
+
+            .carrito {
+                position: relative;
+                width: 90%;
+                margin: 20px auto;
+                top: 0;
+                right: 0;
+            }
+
+            .search input {
+                width: 90%;
+            }
+
+            .historial {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<script>
+const user = localStorage.getItem("usuario");
+if (!user) {
+    window.location.href = "login.html";
+}
+</script>
+
+<div class="sidebar">
+    <h2>Tienda</h2>
+    <a href="#">Inicio</a>
+    <a href="#">Productos</a>
+    <a href="admin.html">Admin</a>
+    <a href="#" onclick="logout()">Salir</a>
+</div>
+
+<div class="main">
+
+    <div class="search">
+        <input type="text" id="buscador" placeholder="Buscar..." onkeyup="buscar()">
+    </div>
+
+    <div class="productos" id="productos"></div>
+
+    <div class="historial">
+        <h2>📦 Historial</h2>
+        <ul id="historial"></ul>
+    </div>
+
+</div>
+
+<div class="carrito">
+    <h3>🛒</h3>
+    <ul id="carrito"></ul>
+    <p id="total">Total: $0</p>
+    <button onclick="abrirCheckout()">Pagar</button>
+</div>
+
+<div class="modal" id="modal">
+    <div class="modal-content">
+        <h3>Pago 💳</h3>
+        <input placeholder="Nombre en tarjeta">
+        <input placeholder="Número de tarjeta">
+        <input placeholder="Fecha">
+        <input placeholder="CVV">
+        <button onclick="confirmarPago()">Confirmar</button>
+    </div>
+</div>
+
+<div class="soporte" onclick="alert('Soporte 😎')">💬</div>
+
+<script>
+function logout() {
+    localStorage.removeItem("usuario");
+    window.location.href = "login.html";
+}
+
+const listaProductos = [
+    { nombre: "Teclado Gamer", precio: 100, img: "https://via.placeholder.com/200" },
+    { nombre: "Mouse RGB", precio: 50, img: "https://via.placeholder.com/200" },
+    { nombre: "Auriculares", precio: 80, img: "https://via.placeholder.com/200" },
+    { nombre: "Monitor", precio: 300, img: "https://via.placeholder.com/200" }
+];
+
+let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+let historial = JSON.parse(localStorage.getItem("historial")) || [];
+
+function mostrarProductos(filtro="") {
+    const cont = document.getElementById("productos");
+    cont.innerHTML = "";
+
+    listaProductos
+    .filter(p => p.nombre.toLowerCase().includes(filtro.toLowerCase()))
+    .forEach(p => {
+        cont.innerHTML += `
+        <div class="producto">
+            <img src="${p.img}">
+            <h3>${p.nombre}</h3>
+            <p>$${p.precio}</p>
+            <button onclick="agregar('${p.nombre}', ${p.precio})">Agregar</button>
+        </div>`;
+    });
+}
+
+function buscar() {
+    mostrarProductos(document.getElementById("buscador").value);
+}
+
+function mostrarCarrito() {
+    const lista = document.getElementById("carrito");
+    lista.innerHTML = "";
+    let total = 0;
+
+    carrito.forEach((item,i) => {
+        lista.innerHTML += `
+        <li>${item.nombre} - $${item.precio}
+        <button class="delete" onclick="eliminar(${i})">❌</button></li>`;
+        total += item.precio;
+    });
+
+    document.getElementById("total").innerText = "Total: $" + total;
+}
+
+function agregar(n,p) {
+    carrito.push({nombre:n, precio:p});
+    localStorage.setItem("carrito", JSON.stringify(carrito));
+    mostrarCarrito();
+}
+
+function eliminar(i) {
+    carrito.splice(i,1);
+    localStorage.setItem("carrito", JSON.stringify(carrito));
+    mostrarCarrito();
+}
+
+function abrirCheckout() {
+    if(carrito.length === 0) return alert("Carrito vacío");
+    document.getElementById("modal").style.display = "flex";
+}
+
+function confirmarPago() {
+    historial.push([...carrito]);
+    localStorage.setItem("historial", JSON.stringify(historial));
+
+    carrito = [];
+    localStorage.setItem("carrito", JSON.stringify(carrito));
+
+    document.getElementById("modal").style.display = "none";
+    alert("Compra realizada 😎");
+
+    mostrarCarrito();
+    mostrarHistorial();
+}
+
+function mostrarHistorial() {
+    const h = document.getElementById("historial");
+    h.innerHTML = "";
+
+    historial.forEach((compra, i) => {
+        let items = compra.map(p => p.nombre).join(", ");
+        h.innerHTML += `<li>Compra ${i+1}: ${items}</li>`;
+    });
+}
+
+mostrarProductos();
+mostrarCarrito();
+mostrarHistorial();
+</script>
+
+</body>
+</html>
